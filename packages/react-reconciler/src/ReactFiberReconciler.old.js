@@ -330,7 +330,6 @@ export function updateContainer(
   }
   // *1. 获取 current fiber
   const current = container.current;
-  debugger
   const eventTime = requestEventTime();
   const lane = requestUpdateLane(current);
 

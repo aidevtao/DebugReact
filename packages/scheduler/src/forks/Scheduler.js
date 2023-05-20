@@ -9,7 +9,7 @@
 
 /* eslint-disable no-var */
 
-import type {PriorityLevel} from '../SchedulerPriorities';
+import type { PriorityLevel } from '../SchedulerPriorities';
 
 import {
   enableSchedulerDebugging,
@@ -21,7 +21,7 @@ import {
   maxYieldMs,
 } from '../SchedulerFeatureFlags';
 
-import {push, pop, peek} from '../SchedulerMinHeap';
+import { push, pop, peek } from '../SchedulerMinHeap';
 
 // TODO: Use symbols?
 import {
@@ -112,14 +112,14 @@ const localSetImmediate =
 
 const isInputPending =
   typeof navigator !== 'undefined' &&
-  // $FlowFixMe[prop-missing]
-  navigator.scheduling !== undefined &&
-  // $FlowFixMe[incompatible-type]
-  navigator.scheduling.isInputPending !== undefined
+    // $FlowFixMe[prop-missing]
+    navigator.scheduling !== undefined &&
+    // $FlowFixMe[incompatible-type]
+    navigator.scheduling.isInputPending !== undefined
     ? navigator.scheduling.isInputPending.bind(navigator.scheduling)
     : null;
 
-const continuousOptions = {includeContinuous: enableIsInputPendingContinuous};
+const continuousOptions = { includeContinuous: enableIsInputPendingContinuous };
 
 function advanceTimers(currentTime: number) {
   // Check for tasks that are no longer delayed and add them to the queue.
@@ -205,12 +205,13 @@ function flushWork(initialTime: number) {
     }
   }
 }
-
+//* 循环执行高优先级任务
 function workLoop(initialTime: number) {
   let currentTime = initialTime;
   advanceTimers(currentTime);
+  //* 找出优先级最高的任务
   currentTask = peek(taskQueue);
-
+  // * while循环执行高优先级任务 完毕或者中断
   while (
     currentTask !== null &&
     !(enableSchedulerDebugging && isSchedulerPaused)
@@ -222,6 +223,7 @@ function workLoop(initialTime: number) {
       break;
     }
     // $FlowFixMe[incompatible-use] found when upgrading Flow
+    //* 任务就是一个函数，执行任务就是执行这个函数
     const callback = currentTask.callback;
     if (typeof callback === 'function') {
       // $FlowFixMe[incompatible-use] found when upgrading Flow
@@ -234,8 +236,10 @@ function workLoop(initialTime: number) {
         // $FlowFixMe[incompatible-call] found when upgrading Flow
         markTaskRun(currentTask, currentTime);
       }
+      // * 此处执行
       const continuationCallback = callback(didUserCallbackTimeout);
       currentTime = getCurrentTime();
+      // * 如果任务没哟执行完毕，接着放在任务池不动
       if (typeof continuationCallback === 'function') {
         // If a continuation is returned, immediately yield to the main thread
         // regardless of how much time is left in the current time slice.
@@ -254,6 +258,7 @@ function workLoop(initialTime: number) {
           // $FlowFixMe[incompatible-use] found when upgrading Flow
           currentTask.isQueued = false;
         }
+        // * 任务执行完毕 从任务池中删除
         if (currentTask === peek(taskQueue)) {
           pop(taskQueue);
         }
@@ -262,6 +267,7 @@ function workLoop(initialTime: number) {
     } else {
       pop(taskQueue);
     }
+    // *当前任务处理完毕后，再找出下一轮的 优先级最高的 任务
     currentTask = peek(taskQueue);
   }
   // Return whether there's additional work
@@ -326,7 +332,7 @@ function unstable_next<T>(eventHandler: () => T): T {
   }
 }
 
-function unstable_wrapCallback<T: (...Array<mixed>) => mixed>(callback: T): T {
+function unstable_wrapCallback<T: (...Array<mixed>) => mixed > (callback: T): T {
   var parentPriorityLevel = currentPriorityLevel;
   // $FlowFixMe[incompatible-return]
   return function () {
@@ -341,15 +347,17 @@ function unstable_wrapCallback<T: (...Array<mixed>) => mixed>(callback: T): T {
     }
   };
 }
-
+// *根据优先级和延迟时间将任务对象添加到相应的队列中列
 function unstable_scheduleCallback(
-  priorityLevel: PriorityLevel,
+  priorityLevel: PriorityLevel, //优先级
   callback: Callback,
-  options?: {delay: number},
+  options?: { delay: number },
 ): Task {
+  // * 当前时间
   var currentTime = getCurrentTime();
 
   var startTime;
+  // * 当前开始时间为+=延迟时间
   if (typeof options === 'object' && options !== null) {
     var delay = options.delay;
     if (typeof delay === 'number' && delay > 0) {
@@ -380,16 +388,16 @@ function unstable_scheduleCallback(
       timeout = NORMAL_PRIORITY_TIMEOUT;
       break;
   }
-
+  // * 过期时间为 开始时间 加 排队时间，值越小 优先级越高
   var expirationTime = startTime + timeout;
-
+  // * 构建任务对象
   var newTask: Task = {
     id: taskIdCounter++,
     callback,
     priorityLevel,
     startTime,
     expirationTime,
-    sortIndex: -1,
+    sortIndex: -1, // * 代表优先级，值越小优先级越高，由expirationTime赋值得到，并根据它排序优先级
   };
   if (enableProfiling) {
     newTask.isQueued = false;
@@ -398,6 +406,7 @@ function unstable_scheduleCallback(
   if (startTime > currentTime) {
     // This is a delayed task.
     newTask.sortIndex = startTime;
+    // * 需要延迟的放入timeQueue
     push(timerQueue, newTask);
     if (peek(taskQueue) === null && newTask === peek(timerQueue)) {
       // All tasks are delayed, and this is the task with the earliest delay.
@@ -408,10 +417,12 @@ function unstable_scheduleCallback(
         isHostTimeoutScheduled = true;
       }
       // Schedule a timeout.
+      // 排队结束后再放入taskQueue
       requestHostTimeout(handleTimeout, startTime - currentTime);
     }
   } else {
     newTask.sortIndex = expirationTime;
+    // * 立即执行的放入taskQueue
     push(taskQueue, newTask);
     if (enableProfiling) {
       markTaskStart(newTask, currentTime);
@@ -545,7 +556,7 @@ function forceFrameRate(fps: number) {
     // Using console['error'] to evade Babel and ESLint
     console['error'](
       'forceFrameRate takes a positive int between 0 and 125, ' +
-        'forcing frame rates higher than 125 fps is not supported',
+      'forcing frame rates higher than 125 fps is not supported',
     );
     return;
   }
@@ -671,8 +682,8 @@ export const unstable_Profiling: {
   startLoggingProfilingEvents(): void,
   stopLoggingProfilingEvents(): ArrayBuffer | null,
 } | null = enableProfiling
-  ? {
+    ? {
       startLoggingProfilingEvents,
       stopLoggingProfilingEvents,
     }
-  : null;
+    : null;

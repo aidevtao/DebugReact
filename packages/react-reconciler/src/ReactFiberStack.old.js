@@ -7,9 +7,9 @@
  * @flow
  */
 
-import type {Fiber} from './ReactInternalTypes';
+import type { Fiber } from './ReactInternalTypes';
 
-export type StackCursor<T> = {current: T};
+export type StackCursor<T> = { current: T };
 
 const valueStack: Array<any> = [];
 
@@ -55,10 +55,15 @@ function pop<T>(cursor: StackCursor<T>, fiber: Fiber): void {
 
   index--;
 }
-
+/**
+ * 
+ * @param {StackCursor} cursor 全局变量：一个栈，就是一个对象
+ * @param {*} value 
+ * @param {*} fiber 
+ */
 function push<T>(cursor: StackCursor<T>, value: T, fiber: Fiber): void {
   index++;
-
+  // 把新的值入栈
   valueStack[index] = cursor.current;
 
   if (__DEV__) {
