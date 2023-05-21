@@ -16,6 +16,7 @@ if (__DEV__) {
 /**
  * Base class helpers for the updating state of a component.
  */
+// * 用于创建React组件的基类
 function Component(props, context, updater) {
   this.props = props;
   this.context = context;
@@ -25,7 +26,7 @@ function Component(props, context, updater) {
   // renderer.
   this.updater = updater || ReactNoopUpdateQueue;
 }
-
+// * React可以根据这个属性来判断一个对象是否是React组件的实例
 Component.prototype.isReactComponent = {};
 
 /**
@@ -53,7 +54,8 @@ Component.prototype.isReactComponent = {};
  * @final
  * @protected
  */
-Component.prototype.setState = function(partialState, callback) {
+Component.prototype.setState = function (partialState, callback) {
+  // *判断第一个参数是否合规
   if (
     typeof partialState !== 'object' &&
     typeof partialState !== 'function' &&
@@ -61,10 +63,10 @@ Component.prototype.setState = function(partialState, callback) {
   ) {
     throw new Error(
       'setState(...): takes an object of state variables to update or a ' +
-        'function which returns an object of state variables.',
+      'function which returns an object of state variables.',
     );
   }
-
+  // *其实最终执行的是下面这个函数
   this.updater.enqueueSetState(this, partialState, callback, 'setState');
 };
 
@@ -82,7 +84,8 @@ Component.prototype.setState = function(partialState, callback) {
  * @final
  * @protected
  */
-Component.prototype.forceUpdate = function(callback) {
+Component.prototype.forceUpdate = function (callback) {
+  // *和setState的区别是没有携带参数，否则就成了setState
   this.updater.enqueueForceUpdate(this, callback, 'forceUpdate');
 };
 
@@ -96,17 +99,17 @@ if (__DEV__) {
     isMounted: [
       'isMounted',
       'Instead, make sure to clean up subscriptions and pending requests in ' +
-        'componentWillUnmount to prevent memory leaks.',
+      'componentWillUnmount to prevent memory leaks.',
     ],
     replaceState: [
       'replaceState',
       'Refactor your code to use setState instead (see ' +
-        'https://github.com/facebook/react/issues/3236).',
+      'https://github.com/facebook/react/issues/3236).',
     ],
   };
-  const defineDeprecationWarning = function(methodName, info) {
+  const defineDeprecationWarning = function (methodName, info) {
     Object.defineProperty(Component.prototype, methodName, {
-      get: function() {
+      get: function () {
         console.warn(
           '%s(...) is deprecated in plain JavaScript React classes. %s',
           info[0],
@@ -123,7 +126,7 @@ if (__DEV__) {
   }
 }
 
-function ComponentDummy() {}
+function ComponentDummy() { }
 ComponentDummy.prototype = Component.prototype;
 
 /**
@@ -143,4 +146,4 @@ pureComponentPrototype.constructor = PureComponent;
 assign(pureComponentPrototype, Component.prototype);
 pureComponentPrototype.isPureReactComponent = true;
 
-export {Component, PureComponent};
+export { Component, PureComponent };

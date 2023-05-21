@@ -405,7 +405,16 @@ function areHookInputsEqual(
   }
   return true;
 }
-
+/**
+ * * 处理hooks
+ * @param {*} current 
+ * @param {*} workInProgress 
+ * @param {*} Component 
+ * @param {*} props 
+ * @param {*} secondArg 
+ * @param {*} nextRenderLanes 
+ * @returns 
+ */
 export function renderWithHooks<Props, SecondArg>(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -427,7 +436,7 @@ export function renderWithHooks<Props, SecondArg>(
     ignorePreviousDependencies =
       current !== null && current.type !== workInProgress.type;
   }
-
+  // * 初始化
   workInProgress.memoizedState = null;
   workInProgress.updateQueue = null;
   workInProgress.lanes = NoLanes;
@@ -461,6 +470,7 @@ export function renderWithHooks<Props, SecondArg>(
       ReactCurrentDispatcher.current = HooksDispatcherOnMountInDEV;
     }
   } else {
+    // * 检查初次渲染阶段还是更新阶段
     ReactCurrentDispatcher.current =
       current === null || current.memoizedState === null
         ? HooksDispatcherOnMount
@@ -470,13 +480,16 @@ export function renderWithHooks<Props, SecondArg>(
   // If this is a replay, restore the thenable state from the previous attempt.
   const prevThenableState = getSuspendedThenableState();
   prepareThenableState(prevThenableState);
+  // * 拿到children
   let children = Component(props, secondArg);
 
   // Check if there was a render phase update
   if (didScheduleRenderPhaseUpdateDuringThisPass) {
     // Keep rendering in a loop for as long as render phase updates continue to
     // be scheduled. Use a counter to prevent infinite loops.
+    // * 渲染次数限制 default:25
     let numberOfReRenders: number = 0;
+    // * 处理可能的重复渲染情况
     do {
       didScheduleRenderPhaseUpdateDuringThisPass = false;
       localIdCounter = 0;
@@ -2609,7 +2622,7 @@ if (enableUseMemoCacheHook) {
 if (enableUseEventHook) {
   (ContextOnlyDispatcher: Dispatcher).useEvent = throwInvalidHookError;
 }
-
+// * 初次渲染阶段
 const HooksDispatcherOnMount: Dispatcher = {
   readContext,
 
@@ -2645,6 +2658,8 @@ if (enableUseMemoCacheHook) {
 if (enableUseEventHook) {
   (HooksDispatcherOnMount: Dispatcher).useEvent = mountEvent;
 }
+// * 更新阶段
+// ! 初次渲染阶段和更新阶段使用的hook函数是不同的，前者的函数都是mount开头后者都是update开头，使用不同个的函数是因为：hook函数的参数可以是函数，但是更新阶段就不会用到它，而是用的是存储在Fiber的上一次的状态值。
 const HooksDispatcherOnUpdate: Dispatcher = {
   readContext,
 

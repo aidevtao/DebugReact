@@ -167,6 +167,7 @@ function applyDerivedStateFromProps(
   nextProps: any,
 ) {
   const prevState = workInProgress.memoizedState;
+  // * 返回新的状态值
   let partialState = getDerivedStateFromProps(nextProps, prevState);
   if (__DEV__) {
     if (
@@ -184,10 +185,12 @@ function applyDerivedStateFromProps(
     warnOnUndefinedDerivedState(ctor, partialState);
   }
   // Merge the partial state and the previous state.
+  // * 合并新老状态值
   const memoizedState =
     partialState === null || partialState === undefined
       ? prevState
       : assign({}, prevState, partialState);
+  // * 存储到fiber上
   workInProgress.memoizedState = memoizedState;
 
   // Once the update queue is empty, persist the derived state onto the
@@ -581,6 +584,7 @@ function checkClassInstance(workInProgress: Fiber, ctor: any, newProps: any) {
 }
 
 function adoptClassInstance(workInProgress: Fiber, instance: any): void {
+  // * setState forceUpdate等方法的存储地址
   instance.updater = classComponentUpdater;
   workInProgress.stateNode = instance;
   // The instance needs access to the fiber so that it can schedule updates
@@ -643,6 +647,7 @@ function constructClassInstance(
   }
 
   if (typeof contextType === 'object' && contextType !== null) {
+    // * 获取context
     context = readContext((contextType: any));
   } else if (!disableLegacyContext) {
     unmaskedContext = getUnmaskedContext(workInProgress, ctor, true);
@@ -653,7 +658,7 @@ function constructClassInstance(
       ? getMaskedContext(workInProgress, unmaskedContext)
       : emptyContextObject;
   }
-
+  // * 构造实例
   let instance = new ctor(props, context);
   // Instantiate twice to help detect side-effects.
   if (__DEV__) {
@@ -669,11 +674,12 @@ function constructClassInstance(
       }
     }
   }
-
+  // * 实例上有state 便把state赋值到memoizedState
   const state = (workInProgress.memoizedState =
     instance.state !== null && instance.state !== undefined
       ? instance.state
       : null);
+  // * 将Fiber存在实例上，即拿到实例，就拿到了Fiber
   adoptClassInstance(workInProgress, instance);
 
   if (__DEV__) {
@@ -879,9 +885,9 @@ function mountClassInstance(
       );
     }
   }
-
+  // * 获取state
   instance.state = workInProgress.memoizedState;
-
+  // * 获取声明周期getDerivedStateFromProps并执行
   const getDerivedStateFromProps = ctor.getDerivedStateFromProps;
   if (typeof getDerivedStateFromProps === 'function') {
     applyDerivedStateFromProps(
@@ -890,11 +896,13 @@ function mountClassInstance(
       getDerivedStateFromProps,
       newProps,
     );
+    // * 执行完毕生命周期后重新赋值state
     instance.state = workInProgress.memoizedState;
   }
 
   // In order to support react-lifecycles-compat polyfilled components,
   // Unsafe lifecycles should not be invoked for components using the new APIs.
+  // * 遗留的生命周期函数调用
   if (
     typeof ctor.getDerivedStateFromProps !== 'function' &&
     typeof instance.getSnapshotBeforeUpdate !== 'function' &&
@@ -904,6 +912,7 @@ function mountClassInstance(
     callComponentWillMount(workInProgress, instance);
     // If we had additional state updates during this life-cycle, let's
     // process them now.
+    // * 重新挂载后 处理更新
     processUpdateQueue(workInProgress, newProps, instance, renderLanes);
     instance.state = workInProgress.memoizedState;
   }
